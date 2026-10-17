@@ -170,7 +170,7 @@ function ApplySheet({ jobId, title, isShift, onClose, onDone }: { jobId: string;
         </View>
         <View style={{ alignItems: 'center' }}>
           <T weight="bold" size={20} tone="primary">
-            {profile?.reliability.score ?? '—'}
+            {profile ? (profile.reliability.score ?? 'Шинэ') : '—'}
           </T>
           <T size={11} tone="muted">
             оноо

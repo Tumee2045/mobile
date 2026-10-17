@@ -943,6 +943,8 @@ export const api = {
         if (isOnLeave(m.userId, date)) return 'leave';
         return db.shifts.find((s) => s.userId === m.userId && s.date === date)?.slot ?? null;
       }),
+      /** The shift as planned, ignoring leave — used to find a replacement. */
+      planned: days.map((date) => db.shifts.find((s) => s.userId === m.userId && s.date === date)?.slot ?? null),
     }));
     const coverage = days.map((_, i) => ({
       morning: rows.filter((r) => r.cells[i] === 'morning').length,
@@ -965,6 +967,74 @@ export const api = {
       (p) => p.companyId === companyId && p.branchId === branchId && p.weekStart === weekStart,
     );
     return respond({ days, rows, coverage, required: { morning: 2, evening: 2 }, pendingLeave, published });
+  },
+
+  // ----- Shift recommendations (pitch slide 29) -----
+  /**
+   * Who could cover a shift. Everyone is treated as available; candidates are
+   * ranked by experience in the same job as the person being replaced, then by
+   * reliability score. The manager makes the call.
+   */
+  getShiftRecommendations(companyId: ID, branchId: ID, date: ISODate, slot: ShiftSlot, forUserId?: ID) {
+    const staff = db.memberships.filter(
+      (m) => m.companyId === companyId && m.status === 'active' && m.scheduleType === 'shift' && permissionsOf(m).includes('self.attendance'),
+    );
+    const reference = forUserId ? staff.find((m) => m.userId === forUserId) : undefined;
+    const counts = new Map<string, number>();
+    for (const m of staff.filter((x) => x.branchId === branchId)) counts.set(m.title, (counts.get(m.title) ?? 0) + 1);
+    const targetTitle = reference?.title ?? [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+    const norm = (t: string) => t.trim().toLowerCase();
+    const similar = (t: string) => !!targetTitle && (norm(t).includes(norm(targetTitle)) || norm(targetTitle).includes(norm(t)));
+    const slotOf = (uid: ID) => db.shifts.find((s) => s.userId === uid && s.date === date)?.slot ?? null;
+
+    const candidates = staff
+      // Same branch, so the assignment shows in this branch's grid and coverage.
+      .filter((m) => m.branchId === branchId && m.userId !== forUserId && !isOnLeave(m.userId, date) && slotOf(m.userId) !== slot)
+      .map((m) => {
+        const u = findUser(m.userId);
+        const verified = buildHistory(m.userId).filter((h) => h.verified);
+        const matches = verified.filter((h) => similar(h.title));
+        const similarMonths = matches.reduce((s, h) => s + monthsBetween(h.startDate, h.endDate), 0);
+        const rel = reliabilityOf(m.userId);
+        const other = slotOf(m.userId);
+        const att = verified.find((h) => h.companyId === companyId)?.attendancePercent;
+        const branch = m.branchId ? findBranch(m.branchId) : null;
+        return {
+          user: userRef(u),
+          membershipId: m.id,
+          title: m.title,
+          branch: branch ? { id: branch.id, name: branch.name } : null,
+          score: rel.score,
+          status: rel.status,
+          similarMonths,
+          similarJobs: matches.length,
+          otherSlotSameDay: other,
+          reasons: [
+            similarMonths ? `${targetTitle} туршлага ${similarMonths} сар` : `${targetTitle || 'Энэ ажил'}-ын туршлагагүй`,
+            rel.score != null ? `Найдвартай байдал ${rel.score}/100` : 'Шинэ · мэдээлэл дутуу',
+            ...(att != null ? [`Ирц ${att}%`] : []),
+            m.branchId === branchId ? 'Энэ салбарт ажилладаг' : `${branch?.name ?? 'Өөр салбар'}-аас`,
+          ],
+          note: other ? `Тэр өдөр ${other === 'morning' ? 'өглөөний' : 'оройн'} ээлжтэй — давхар ээлж болно` : null,
+        };
+      })
+      // similar experience → not already working that day → score → months of similar work
+      .sort(
+        (a, b) =>
+          Number(b.similarMonths > 0) - Number(a.similarMonths > 0) ||
+          Number(!b.otherSlotSameDay) - Number(!a.otherSlotSameDay) ||
+          (b.score ?? -1) - (a.score ?? -1) ||
+          b.similarMonths - a.similarMonths,
+      );
+
+    return respond({
+      date,
+      slot,
+      slotLabel: `${SHIFT_SLOTS[slot].label} ${SHIFT_SLOTS[slot].start}–${SHIFT_SLOTS[slot].end}`,
+      reference: reference ? { user: userRef(findUser(reference.userId)), title: reference.title } : null,
+      targetTitle,
+      candidates,
+    });
   },
 
   setShift(companyId: ID, branchId: ID, userId: ID, date: ISODate, slot: ShiftSlot | null) {
@@ -1355,7 +1425,7 @@ export const api = {
         .map((u) => {
           const r = reliabilityOf(u.id);
           const i = getReliabilityInputs(u.id);
-          return { user: userRef(u), score: r.score, factors: r.factors, attendance: i.attendance, ratings: i.ratings.length };
+          return { user: userRef(u), score: r.score, status: r.status, breakdown: r.breakdown, factors: r.factors, attendance: i.attendance, ratings: i.ratings.length };
         })
         .sort((a, b) => (b.score ?? -1) - (a.score ?? -1)),
     );
@@ -1460,7 +1530,7 @@ function buildHistory(userId: ID): WorkHistoryEntry[] {
 }
 
 function reliabilityOf(userId: ID): ReliabilityScore {
-  const { score, updatedAt } = calculateReliabilityScore(userId);
+  const { score, updatedAt, result } = calculateReliabilityScore(userId);
   const inputs = getReliabilityInputs(userId);
   const { onTime, late, absent } = inputs.attendance;
   const total = onTime + late + absent;
@@ -1476,6 +1546,8 @@ function reliabilityOf(userId: ID): ReliabilityScore {
     score,
     updatedAt,
     algorithmVersion: ALGORITHM_VERSION,
+    status: result.status,
+    breakdown: result.breakdown,
     factors: {
       attendanceLabel: !total && !history.length ? '—' : pct >= 90 ? 'Маш сайн' : pct >= 80 ? 'Сайн' : 'Дунд',
       tenureMonths: history.reduce((s, h) => s + monthsBetween(h.startDate, h.endDate), 0),

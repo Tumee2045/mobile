@@ -1,10 +1,11 @@
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, useApi } from '@/api';
 import { useAuthed } from '@/auth/session';
 import { Avatar, Card, Empty, IconButton, InverseCard, Row, Segmented, T } from '@/components/ui';
+import { confirm } from '@/lib/confirm';
 import { monthDot } from '@/lib/fmt';
 import { color } from '@/theme/tokens';
 
@@ -16,7 +17,6 @@ export function ProfileScreen() {
   const r = data?.reliability;
   const verified = data?.history.filter((h) => h.verified) ?? [];
   const quote = verified.find((h) => h.managerQuote)?.managerQuote;
-  const pct = verified.length ? Math.round(verified.reduce((s, h) => s + (h.attendancePercent ?? 0), 0) / verified.length) : null;
 
   const setMode = (m: 'seeker' | 'employee') => {
     if (m === 'employee' && employer) {
@@ -64,37 +64,46 @@ export function ProfileScreen() {
                 Найдвартай байдлын оноо
               </T>
               <T size={12} tone="onInverseMuted">
-                [Алгоритм боловсруулагдаж байна]
+                {r?.status === 'insufficient' ? 'Шинэ · мэдээлэл дутуу — бага оноо биш' : '100 онооны загвар · 5 хэсэг'}
               </T>
             </View>
             <Row gap={4} style={{ alignItems: 'baseline' }}>
               <T weight="bold" size={40} tone="onPrimary" style={{ lineHeight: 44 }}>
-                {r?.score ?? '—'}
+                {r ? (r.score ?? 'Шинэ') : '—'}
               </T>
-              <T size="md" tone="onInverseMuted">
-                /100
-              </T>
+              {r?.score != null && (
+                <T size="md" tone="onInverseMuted">
+                  /100
+                </T>
+              )}
             </Row>
           </Row>
           <View style={{ height: 8, borderRadius: 999, backgroundColor: color.inverseTrack, overflow: 'hidden' }}>
             <View style={{ width: `${r?.score ?? 0}%`, height: '100%', borderRadius: 999, backgroundColor: color.accent }} />
           </View>
-          <Row>
-            {[
-              ['Ирц', pct != null ? `${pct}%` : '—'],
-              ['Ажилласан', r ? `${r.factors.tenureMonths} сар` : '—'],
-              ['Үнэлгээ', r?.factors.avgRating ? `${r.factors.avgRating}/5` : '—'],
-            ].map(([l, v]) => (
-              <View key={l} style={{ flex: 1, gap: 2 }}>
-                <T size={12} tone="onInverseMuted">
-                  {l}
-                </T>
-                <T weight="bold" size={16} tone="onPrimary">
-                  {v}
+          <View style={{ gap: 10 }}>
+            {r?.breakdown.map((p) => (
+              <View key={p.key} style={{ gap: 4 }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <T size={13} tone="onInverseMuted">
+                    {p.label}
+                  </T>
+                  <T weight="semibold" size={13} tone="onPrimary">
+                    {p.points == null ? '—' : `${p.points}/${p.max}`}
+                  </T>
+                </Row>
+                <View style={{ height: 4, borderRadius: 999, backgroundColor: color.inverseTrack, overflow: 'hidden' }}>
+                  <View style={{ width: `${p.points == null ? 0 : (p.points / p.max) * 100}%`, height: '100%', backgroundColor: color.accent }} />
+                </View>
+                <T size={11} tone="onInverseMuted">
+                  {p.detail}
                 </T>
               </View>
             ))}
-          </Row>
+          </View>
+          <T size={11} tone="onInverseMuted">
+            Хүйс, нас, эрүүл мэндийн мэдээлэл ашиглахгүй. Санал нийлэхгүй бол маргаан гаргах эрхтэй.
+          </T>
         </InverseCard>
 
         <Card style={{ borderRadius: 18, gap: 12 }}>
@@ -139,17 +148,10 @@ export function ProfileScreen() {
             danger
             last
             onPress={() =>
-              Alert.alert('Гарах уу?', undefined, [
-                { text: 'Болих', style: 'cancel' },
-                {
-                  text: 'Гарах',
-                  style: 'destructive',
-                  onPress: async () => {
-                    await signOut();
-                    router.replace('/login');
-                  },
-                },
-              ])
+              confirm('Гарах уу?', undefined, 'Гарах', async () => {
+                await signOut();
+                router.replace('/login');
+              })
             }
           />
         </Card>

@@ -6,6 +6,7 @@ import { api, useApi, useMutation } from '@/api';
 import { useAuthed } from '@/auth/session';
 import { Button, Card, Checkbox, Footer, Header, KeyValue, Loading, Row, T } from '@/components/ui';
 import { SignaturePad } from '@/components/SignaturePad';
+import { confirm } from '@/lib/confirm';
 import { pay } from '@/lib/fmt';
 import { color } from '@/theme/tokens';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,21 +45,14 @@ export default function ContractScreen() {
   };
 
   const doDecline = () =>
-    Alert.alert('Гэрээнээс татгалзах уу?', 'Энэ өргөдөл хаагдана.', [
-      { text: 'Болих', style: 'cancel' },
-      {
-        text: 'Татгалзах',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await decline.mutate(c.id, user.id);
-            router.back();
-          } catch (e) {
-            Alert.alert('Алдаа', (e as Error).message);
-          }
-        },
-      },
-    ]);
+    confirm('Гэрээнээс татгалзах уу?', 'Энэ өргөдөл хаагдана.', 'Татгалзах', async () => {
+      try {
+        await decline.mutate(c.id, user.id);
+        router.back();
+      } catch (e) {
+        Alert.alert('Алдаа', (e as Error).message);
+      }
+    });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.bg }} edges={['top']}>

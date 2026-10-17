@@ -5,6 +5,7 @@ import { API_URL, api, getMode, httpAuth, setMode, useApi, type DataMode, type P
 import { homeFor, useSession } from '@/auth/session';
 import { Button, Field, Row, Screen, Segmented, T } from '@/components/ui';
 import { isSimulatingLocation, setSimulatingLocation } from '@/lib/location';
+import { Logo } from '@/components/Logo';
 import { color, radius } from '@/theme/tokens';
 
 type Role = Extract<PersonaKey, 'seeker' | 'employee'>;
@@ -64,17 +65,13 @@ export default function Login() {
   return (
     <Screen bg={color.surface} contentStyle={{ paddingHorizontal: 24, paddingTop: 40, gap: 28, flexGrow: 1 }}>
       <View style={{ gap: 18 }}>
-        <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: color.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <T weight="bold" size={26} tone="onPrimary">
-            P
-          </T>
-        </View>
+        <Logo size={44} />
         <View style={{ gap: 6 }}>
           <T weight="bold" size={28}>
             Тавтай морил
           </T>
           <T size="lg" tone="muted">
-            [Платформын нэр]-д нэвтэрнэ үү
+            HirERP-д нэвтэрнэ үү
           </T>
         </View>
       </View>

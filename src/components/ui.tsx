@@ -1,6 +1,6 @@
 /**
  * Mobile UI kit — built from the team's mobile design (Claude Design canvas
- * "HR Platform Mobile") on the shared blue tokens.
+ * "HirERP Mobile") on the shared blue tokens.
  */
 import type { ComponentProps, ReactNode } from 'react';
 import {

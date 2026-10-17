@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "[Платформын нэр]",
+    "name": "HirERP",
     "slug": "hackaton-mobile",
     "version": "0.1.0",
-    "scheme": "hrplatform",
+    "scheme": "hirerp",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6EEFC",
+        "backgroundColor": "#1D4ED8",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -24,6 +24,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
       "expo-status-bar",
       "expo-secure-store",
       "expo-font",

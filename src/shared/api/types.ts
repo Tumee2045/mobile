@@ -324,9 +324,22 @@ export interface ChatMessage {
 
 // ---------- Derived read models (computed by backend) ----------
 
+/** One part of the 100-point reliability score (pitch slide 28). */
+export interface ScorePart {
+  key: 'attendance' | 'performance' | 'rating' | 'experience' | 'reliability';
+  label: string;
+  max: number;
+  /** null = no data yet (skipped, not counted as zero). */
+  points: number | null;
+  detail: string;
+}
+
 export interface ReliabilityScore {
   userId: ID;
+  /** null while there's not enough history ("шинэ / мэдээлэл дутуу"). */
   score: number | null;
+  status: 'ok' | 'insufficient';
+  breakdown: ScorePart[];
   updatedAt: ISODateTime;
   algorithmVersion: string;
   factors: {

@@ -1,4 +1,4 @@
-# HR Platform — mobile (workers)
+# HirERP — mobile (workers)
 
 Expo SDK 58 + React Native + Expo Router + TypeScript. For job seekers and employees.
 Managers and HR use the web app.

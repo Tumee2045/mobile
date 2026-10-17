@@ -8,11 +8,11 @@ export const palette = {
   blue100: '#E6EEFC',
   blue200: '#C9D8F5',
   blue300: '#8DB8FF',
-  blue600: '#1D5BD8',
-  blue700: '#1747AB',
+  blue600: '#1D4ED8',
+  blue700: '#1A3FAE',
   blue800: '#183C7A',
   blue850: '#24498C',
-  blue900: '#0E2A5C',
+  blue900: '#0F2557',
   blue950: '#0A1F45',
   gray0: '#FFFFFF',
   gray25: '#FAFBFC',
@@ -65,6 +65,19 @@ export const color = {
   info: '#5B3BB5',
   infoSoft: '#F0EBFD',
 } as const;
+
+/** HirERP logo colours (brand guide). */
+export const brand = {
+  navy: '#0F2557',
+  blue: '#1D4ED8',
+  blueMid: '#4A7BF0',
+  blueLight: '#8FB0FF',
+  blueSoft: '#A3BBFF',
+  orange: '#F5A524',
+} as const;
+
+/** Wordmark font (Sora ExtraBold). */
+export const fontBrand = 'Sora_800ExtraBold';
 
 export const font = {
   regular: 'Onest_400Regular',

@@ -146,6 +146,8 @@ export const httpApi: Api = {
   getDashboard: (companyId, _viewerId, branchId) => get<R<'getDashboard'>>(`/companies/${enc(companyId)}/dashboard`, { branchId }),
   getAttendanceReport: (companyId, f) => get<R<'getAttendanceReport'>>(`/companies/${enc(companyId)}/reports/attendance`, f),
   getSchedule: (companyId, branchId, weekStart) => get<R<'getSchedule'>>(`/companies/${enc(companyId)}/schedule`, { branchId, weekStart }),
+  getShiftRecommendations: (companyId, branchId, date, slot, forUserId) =>
+    get<R<'getShiftRecommendations'>>(`/companies/${enc(companyId)}/schedule/recommendations`, { branchId, date, slot, forUserId }),
   setShift: (companyId, branchId, userId, date, slot) =>
     put<R<'setShift'>>(`/companies/${enc(companyId)}/schedule/shifts`, { branchId, userId, date, slot }),
   publishSchedule: (companyId, branchId, weekStart) =>

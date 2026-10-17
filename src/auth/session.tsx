@@ -110,6 +110,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         httpAuth.logout();
         writeStored(null);
+        // Clear the user now, not on the next effect — otherwise /login still
+        // sees a signed-in user and redirects straight back home.
+        setUser(null);
+        setMemberships([]);
         setStored(null);
       },
       switchCompany: (cid) => {
