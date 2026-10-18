@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, useApi } from '@/api';
 import { useAuthed } from '@/auth/session';
 import { Avatar, Card, Empty, IconButton, InverseCard, Row, Segmented, T } from '@/components/ui';
+import { LEVEL_COLORS, ScoreBreakdown, scoreLabel, scoreLevel } from '@/components/ScoreBreakdown';
 import { confirm } from '@/lib/confirm';
 import { monthDot } from '@/lib/fmt';
 import { color } from '@/theme/tokens';
@@ -63,9 +64,14 @@ export function ProfileScreen() {
               <T weight="semibold" size={15} tone="onPrimary">
                 Найдвартай байдлын оноо
               </T>
-              <T size={12} tone="onInverseMuted">
-                {r?.status === 'insufficient' ? 'Шинэ · мэдээлэл дутуу — бага оноо биш' : '100 онооны загвар · 5 хэсэг'}
-              </T>
+              {r && (
+                <Row gap={6} style={{ alignSelf: 'flex-start', marginTop: 6, backgroundColor: color.inverseRaised, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.score == null ? color.onInverseMuted : LEVEL_COLORS[scoreLevel(r.score / 100)] }} />
+                  <T size={12} weight="semibold" tone="onPrimary">
+                    {scoreLabel(r.score)}
+                  </T>
+                </Row>
+              )}
             </View>
             <Row gap={4} style={{ alignItems: 'baseline' }}>
               <T weight="bold" size={40} tone="onPrimary" style={{ lineHeight: 44 }}>
@@ -81,26 +87,7 @@ export function ProfileScreen() {
           <View style={{ height: 8, borderRadius: 999, backgroundColor: color.inverseTrack, overflow: 'hidden' }}>
             <View style={{ width: `${r?.score ?? 0}%`, height: '100%', borderRadius: 999, backgroundColor: color.accent }} />
           </View>
-          <View style={{ gap: 10 }}>
-            {r?.breakdown.map((p) => (
-              <View key={p.key} style={{ gap: 4 }}>
-                <Row style={{ justifyContent: 'space-between' }}>
-                  <T size={13} tone="onInverseMuted">
-                    {p.label}
-                  </T>
-                  <T weight="semibold" size={13} tone="onPrimary">
-                    {p.points == null ? '—' : `${p.points}/${p.max}`}
-                  </T>
-                </Row>
-                <View style={{ height: 4, borderRadius: 999, backgroundColor: color.inverseTrack, overflow: 'hidden' }}>
-                  <View style={{ width: `${p.points == null ? 0 : (p.points / p.max) * 100}%`, height: '100%', backgroundColor: color.accent }} />
-                </View>
-                <T size={11} tone="onInverseMuted">
-                  {p.detail}
-                </T>
-              </View>
-            ))}
-          </View>
+          {r && <ScoreBreakdown parts={r.breakdown} />}
           <T size={11} tone="onInverseMuted">
             Хүйс, нас, эрүүл мэндийн мэдээлэл ашиглахгүй. Санал нийлэхгүй бол маргаан гаргах эрхтэй.
           </T>
